@@ -22,7 +22,7 @@ class SugarCRMAPI(object):
 	}
 	url = None
 
-	def __init__(self, url, client_id, client_secret, user):
+	def __init__(self, url, client_id, client_secret):
 		self.url = url + self.REST10
 		self.client_id = client_id
 		self.client_secret = client_secret
@@ -113,7 +113,7 @@ class SugarCRMAPI(object):
 				return self.call(method, url, data)
 			return None		
 
-	def filter(self, module, filterexp = "", max_num = 20, offset=0,fields="",order_by="",q="",deleted=""):
+	def get_entries(self, module, filterexp = "", max_num = 20, offset=0,fields="",order_by="",q="",deleted=""):
 		headers = self.get_headers()
 		url = "%s/%s"%(self.url,module)
 		data = {
@@ -178,15 +178,23 @@ class SugarCRMAPI(object):
 		return headers
 
 	def upload(self, url, file_content, content_type, field_name):
+		#headers = self.get_headers()				
 		url = "{url}/{route}".format(url=self.url,route=url)
 		response = None
 		file_name = basename(file_content.name).decode('unicode-escape')
-		filename = unicodedata.normalize('NFKD',file_name).encode('ASCII', 'ignore')		
+		filename = unicodedata.normalize('NFKD',file_name).encode('ASCII', 'ignore')
+		# m = MultipartEncoder(
+		# fields={
+		# 	field_name: (filename, file_content.read(), content_type)
+		# })
 		fields = {}
 		fields[field_name] = (filename, file_content.read(), content_type)
 		m = MultipartEncoder(fields=fields)
+		print url
+		print content_type
 
 		response = self.HTTP_METHODS['post'](url,data=m,headers={'Content-Type': m.content_type})
+		print response.text
 		if response.status_code == 200:
 			return json.loads(response.text)
 		elif response.status_code == 401:
@@ -194,5 +202,5 @@ class SugarCRMAPI(object):
 			if refresh_result:
 				self.access_token = refresh_result['access_token']
 				self.refresh_token = refresh_result['refresh_token']
-				return self.upload(url, file_content)
+				return self.upload(url, file_content, content_type, field_name)
 			return None
